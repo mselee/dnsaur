@@ -1,0 +1,16 @@
+[package]
+name = "dnsur"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bstr = { version = "1.11.1" }
+bytes = "1.9.0"
+domain = { version = "0.10.3", default-features = false, features = ["std"] }
+fastrand = "2.3.0"
+memchr = "2.7.4"
+monoio = { version = "0.2.4", default-features = false, features = [
+    "bytes",
+    "macros",
+] }
+snafu = { version = "0.8.5", default-features = false, features = ["std"] }
