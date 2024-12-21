@@ -1,0 +1,31 @@
+[package]
+name = "dnsur"
+version = "0.1.0"
+edition = "2021"
+description = "An asynchronous DNS stub resolver"
+license = "MPL-2.0"
+categories = ["network-programming", "asynchronous"]
+keywords = ["dns", "dns-resolver", "dns-lookup"]
+repository = "https://github.com/mselee/dnsur"
+authors = ["Mohamed Seleem <oss@mselee.com>"]
+include = ["**/*.rs", "LICENSE", "Cargo.toml", "README.md"]
+rust-version = "1.77.2"
+
+[dependencies]
+bstr = { version = "1.11.1" }
+bytes = "1.9.0"
+domain = { version = "0.10.3", default-features = false, features = ["std"] }
+fastrand = "2.3.0"
+memchr = "2.7.4"
+monoio = { version = "0.2.4", default-features = false, features = [
+    "bytes",
+    "macros",
+    "async-cancel",
+] }
+snafu = { version = "0.8.5", default-features = false, features = ["std"] }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+strip = "symbols"
