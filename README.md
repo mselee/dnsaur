@@ -17,7 +17,7 @@ on a threadpool to handle the blocking calls (like most other runtimes). This li
 | limitation   | glibc | dnsur      |
 | ------------ | ----- | ---------- |
 | `nameserver` | 3     | unlimited  |
-| `timeout`    | 30    | `u64::MAX` |
+| `timeout`    | 30    | `u8::MAX` |
 | `ndots`      | 15    | `u8::MAX`  |
 | `attempts`   | 5     | `u8::MAX`  |
 
