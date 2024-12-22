@@ -1,11 +1,11 @@
 [tasks.test]
 description = "Run tests"
 env = { RUST_BACKTRACE = '1' }
-run = ["cargo test --features monoio/iouring,global"]
+run = ["cargo test --features monoio/iouring,monoio/macros,global"]
 
 [tasks.dev]
-description = "Run tests"
-run = ["cargo watch -c -x build --features monoio/iouring,global"]
+description = "Run dev"
+run = ["cargo watch -c -x build --features global"]
 
 [tasks.license]
 description = "Generate license headers"
