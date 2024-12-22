@@ -1,4 +1,8 @@
-use std::{net::SocketAddr, rc::Rc, time::Duration};
+use std::{
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr},
+    rc::Rc,
+    time::Duration,
+};
 
 use domain::base::Message;
 use monoio::{io::Canceller, net::udp::UdpSocket};
@@ -17,7 +21,11 @@ pub(crate) async fn query(
     udp_payload_size: u16,
 ) -> Result<Option<IpAddresses>, Error> {
     // Write the query to the nameserver address.
-    let socket = UdpSocket::bind(("0.0.0.0", 0))?;
+    let bind_address: SocketAddr = match nameserver.ip() {
+        std::net::IpAddr::V4(_) => (Ipv4Addr::UNSPECIFIED, 0).into(),
+        std::net::IpAddr::V6(_) => (Ipv6Addr::UNSPECIFIED, 0).into(),
+    };
+    let socket = UdpSocket::bind(bind_address)?;
 
     async fn send(
         socket: &UdpSocket,
