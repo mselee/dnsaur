@@ -52,19 +52,19 @@ pub(crate) async fn query(
 
     for idx in 1..=attempts {
         let buf = Vec::with_capacity(udp_payload_size as usize);
-        let send_result = send(&socket, query.clone(), *nameserver).await;
-        if send_result.is_err() {
+        let result = send(&socket, query.clone(), *nameserver).await;
+        if let Err(err) = result {
             if idx < attempts {
                 continue;
             }
-            return Err(send_result.map_err(Error::from).unwrap_err());
+            return Err(Error::from(err));
         }
-        let (recv_result, buf) = recv(&socket, buf, timeout_duration).await;
-        if recv_result.is_err() {
+        let (result, buf) = recv(&socket, buf, timeout_duration).await;
+        if let Err(err) = result {
             if idx < attempts {
                 continue;
             }
-            return Err(send_result.map_err(Error::from).unwrap_err());
+            return Err(Error::from(err));
         };
 
         let message = Message::from_octets(buf)?;

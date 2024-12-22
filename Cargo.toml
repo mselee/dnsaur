@@ -11,6 +11,10 @@ authors = ["Mohamed Seleem <oss@mselee.com>"]
 include = ["**/*.rs", "LICENSE", "Cargo.toml", "README.md"]
 rust-version = "1.77.2"
 
+[features]
+default = []
+global = ["dep:local-sync"]
+
 [dependencies]
 bstr = { version = "1.11.1" }
 bytes = "1.9.0"
@@ -23,6 +27,7 @@ monoio = { version = "0.2.4", default-features = false, features = [
     "async-cancel",
 ] }
 snafu = { version = "0.8.5", default-features = false, features = ["std"] }
+local-sync = { git = "https://github.com/mselee/local-sync", rev = "0d3f7393bcbc5b64f2299e66444f778e3cac457c", optional = true }
 
 [profile.release]
 lto = "fat"
