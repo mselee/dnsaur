@@ -3,7 +3,10 @@ description = "Run tests"
 env = { RUST_BACKTRACE = '1' }
 run = ["cargo test --features monoio/iouring,global"]
 
-
 [tasks.dev]
 description = "Run tests"
 run = ["cargo watch -c -x build --features monoio/iouring,global"]
+
+[tasks.license]
+description = "Generate license headers"
+run = ["cargo run --example license"]

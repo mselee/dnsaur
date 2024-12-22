@@ -11,6 +11,11 @@ authors = ["Mohamed Seleem <oss@mselee.com>"]
 include = ["**/*.rs", "LICENSE", "Cargo.toml", "README.md"]
 rust-version = "1.77.2"
 
+# we use `example` rather than `bin` because it allows usage of dev-depdendencies
+[[example]]
+name = "license"
+path = "tools/license.rs"
+
 [features]
 default = []
 global = ["dep:local-sync"]
@@ -37,3 +42,9 @@ lto = "fat"
 codegen-units = 1
 opt-level = 3
 strip = "symbols"
+
+[dev-dependencies]
+file-header = { version = "0.1.3", default-features = false, features = [
+    "spdx",
+] }
+globset = { version = "0.4.15", default-features = false }
