@@ -1,0 +1,4 @@
+[tasks.test]
+description = "Run doc tests"
+env = { RUST_BACKTRACE = '1' }
+run = ["cargo test --all-features --features monoio/iouring,global"]
