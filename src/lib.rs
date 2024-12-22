@@ -1,8 +1,8 @@
 #![forbid(future_incompatible)]
 #![cfg_attr(not(feature = "global"), forbid(unsafe_code))]
 
+mod addr;
 mod errors;
-mod iter;
 mod lookups;
 mod parser;
 #[doc = include_str!("../README.md")]
@@ -15,9 +15,6 @@ use std::{
 };
 
 pub use errors::Error;
-
-#[cfg(feature = "global")]
-use local_sync::OnceCell;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct HostEntry {
@@ -35,7 +32,7 @@ impl HostEntry {
 }
 
 #[cfg(unix)]
-pub struct DnsResolver {
+pub struct StubResolver {
     entries: Vec<HostEntry>,
     search: Vec<String>,
     nameservers: Vec<SocketAddr>,
@@ -48,19 +45,39 @@ pub struct DnsResolver {
 
 #[cfg(feature = "global")]
 thread_local! {
-    pub(crate) static GLOBAL: OnceCell<DnsResolver> = OnceCell::new();
+    pub(crate) static GLOBAL: local_sync::OnceCell<StubResolver> = local_sync::OnceCell::new();
 }
 
 #[cfg(feature = "global")]
-pub async fn lookup<'a, S, B>(host: S) -> Result<B, Error>
+pub async fn lookup<'a, B>(
+    host: impl AsRef<str> + std::borrow::Borrow<str> + 'a,
+) -> Result<B, Error>
 where
-    S: AsRef<str> + std::borrow::Borrow<str> + 'a,
-    B: FromIterator<IpAddr> + Sized,
+    B: FromIterator<(IpAddr, Duration)> + Sized,
 {
     let global = GLOBAL.with(|global| unsafe {
-        std::ptr::NonNull::new_unchecked(global as *const _ as *mut OnceCell<DnsResolver>).as_ref()
+        std::ptr::NonNull::new_unchecked(
+            global as *const _ as *mut local_sync::OnceCell<StubResolver>,
+        )
+        .as_ref()
     });
 
-    let dns: &DnsResolver = global.get_or_try_init(|| DnsResolver::parse()).await?;
+    let dns: &StubResolver = global.get_or_try_init(|| StubResolver::load()).await?;
     dns.lookup(host).await
+}
+
+#[cfg(feature = "global")]
+pub async fn reload() -> Result<(), Error> {
+    let global = GLOBAL.with(|global| unsafe {
+        std::ptr::NonNull::new_unchecked(
+            global as *const _ as *mut local_sync::OnceCell<StubResolver>,
+        )
+        .as_mut()
+    });
+
+    if let Some(dns) = global.get_mut() {
+        dns.reload().await
+    } else {
+        Ok(())
+    }
 }

@@ -1,4 +1,4 @@
-# dnsur
+# dnsaur
 
 An asynchronous DNS stub resolver.
 
@@ -9,13 +9,19 @@ on a threadpool to handle the blocking calls (like most other runtimes). This li
 ## Usage
 ```rust
 use std::net::IpAddr;
-use dnsur::{DnsResolver, Error};
+use std::time::Duration;
+use std::collections::BTreeSet;
+
+use dnsaur::{StubResolver, Error};
 
 #[monoio::main(driver = "iouring", enable_timer = true)]
 async fn main() -> Result<(), Error> {
-    let dns = dnsur::DnsResolver::parse().await?;
-    let ips: Vec<IpAddr> = dns.lookup("google.com").await?;
-    dbg!(ips);
+    let mut dns = dnsaur::StubResolver::load().await?;
+    // pairs of (ip, ttl)
+    let ips: Vec<(IpAddr, Duration)> = dns.lookup("example.com").await?;
+    let ips = dns.lookup::<BTreeSet<_>>("example.com").await?;
+    // reload
+    let _ = dns.reload().await?;
     Ok(())
 }
 ```
@@ -23,12 +29,26 @@ async fn main() -> Result<(), Error> {
 or if you want a global client instance, enable the feature `global`:
 ```rust
 use std::net::IpAddr;
-use dnsur::Error;
+use std::time::Duration;
+use std::collections::BTreeSet;
+
+use dnsaur::Error;
 
 #[monoio::main(driver = "iouring", enable_timer = true)]
 async fn main() -> Result<(), Error> {
-    let ips: Vec<IpAddr> = dnsur::lookup("google.com").await?;
-    dbg!(ips);
+    // pairs of (ip, ttl)
+    let ips: Vec<(IpAddr, Duration)> = dnsaur::lookup("example.com").await?;
+    let ips = dnsaur::lookup::<BTreeSet<_>>("example.com").await?;
+    // reload
+    let _ = dnsaur::reload().await?;
+    // autoreload
+    monoio::spawn(async {
+       loop {
+           monoio::time::sleep(Duration::from_secs(5 * 60)).await;
+           let _ = dnsaur::reload().await?;
+       }
+       Ok::<(), Error>(())
+    });
     Ok(())
 }
 ```
@@ -41,7 +61,7 @@ async fn main() -> Result<(), Error> {
 - Default UDP buffer size is 1232 bytes.
 
 ## Non-standard behavior
-| limitation   | glibc | dnsur      |
+| limitation   | glibc | dnsaur     |
 | ------------ | ----- | ---------- |
 | `nameserver` | 3     | unlimited  |
 | `timeout`    | 30    | `u8::MAX` |

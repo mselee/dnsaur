@@ -26,7 +26,7 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Run Tests
-        run: cargo test --workspace --all-features
+        run: cargo test --features monoio/iouring,global
       - name: release-plz
         uses: release-plz/action@v0.5
         with:
@@ -49,7 +49,7 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Run Tests
-        run: cargo test --workspace --all-features
+        run: cargo test --features monoio/iouring,global
       - name: release-plz
         uses: release-plz/action@v0.5
         with:

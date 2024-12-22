@@ -1,18 +1,20 @@
-use std::{borrow::Borrow, net::IpAddr, str::FromStr};
+use std::{borrow::Borrow, net::IpAddr, str::FromStr, time::Duration};
 
-use crate::{errors::Error, DnsResolver};
+use crate::{errors::Error, StubResolver};
 
 mod hosts;
 mod resolv;
 
-impl DnsResolver {
-    pub async fn lookup<'a, S, B>(&'a self, host: S) -> Result<B, Error>
+impl StubResolver {
+    pub async fn lookup<'a, B>(
+        &'a self,
+        host: impl AsRef<str> + Borrow<str> + 'a,
+    ) -> Result<B, Error>
     where
-        S: AsRef<str> + Borrow<str> + 'a,
-        B: FromIterator<IpAddr>,
+        B: FromIterator<(IpAddr, Duration)>,
     {
         if let Ok(ip) = IpAddr::from_str(host.as_ref()) {
-            return Ok(std::iter::once(ip).collect());
+            return Ok(std::iter::once((ip, Duration::ZERO)).collect());
         }
 
         let mut count: u16 = 0;

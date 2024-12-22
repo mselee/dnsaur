@@ -5,7 +5,7 @@ use bstr::ByteSlice;
 use monoio::fs::read;
 
 use crate::errors::Error;
-use crate::{DnsResolver, HostEntry};
+use crate::{HostEntry, StubResolver};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 const NAMESERVER: &[u8] = "nameserver".as_bytes();
@@ -19,7 +19,7 @@ const SEARCH: &[u8] = "search".as_bytes();
 const DEFAULT_NAMESERVER_IPV4: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 53);
 const DEFAULT_NAMESERVER_IPV6: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 53);
 
-impl DnsResolver {
+impl StubResolver {
     async fn parse_hosts(&mut self) -> Result<(), Error> {
         let content = read("/etc/hosts").await?;
         for line in content.lines() {
@@ -39,7 +39,7 @@ impl DnsResolver {
         Ok(())
     }
 
-    async fn parse_resolv(&mut self, udp_payload_size: Option<u16>) -> Result<(), Error> {
+    async fn parse_resolv(&mut self) -> Result<(), Error> {
         let content = read("/etc/resolv.conf").await?;
         for line in content.lines() {
             let mut it = line.fields().take_while(|field| !field.starts_with(b"#"));
@@ -59,7 +59,7 @@ impl DnsResolver {
                 Some(OPTIONS) => {
                     for field in it {
                         if OPTION_EDNS0 == field {
-                            self.udp_payload_size = udp_payload_size.unwrap_or(1232);
+                            self.udp_payload_size = 1232;
                         } else if let Some((key, value)) = field.split_once_str(":") {
                             match key {
                                 OPTION_NDOTS => self.ndots = value[0],
@@ -83,7 +83,7 @@ impl DnsResolver {
         Ok(())
     }
 
-    pub async fn parse() -> Result<Self, Error> {
+    pub async fn load() -> Result<Self, Error> {
         let mut this = Self {
             entries: Vec::default(),
             search: Vec::default(),
@@ -95,7 +95,13 @@ impl DnsResolver {
             udp_payload_size: 512,
         };
         this.parse_hosts().await?;
-        this.parse_resolv(None).await?;
+        this.parse_resolv().await?;
         Ok(this)
+    }
+
+    pub async fn reload(&mut self) -> Result<(), Error> {
+        let this = Self::load().await?;
+        *self = this;
+        Ok(())
     }
 }

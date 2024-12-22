@@ -1,4 +1,9 @@
 [tasks.test]
-description = "Run doc tests"
+description = "Run tests"
 env = { RUST_BACKTRACE = '1' }
-run = ["cargo test --all-features --features monoio/iouring,global"]
+run = ["cargo test --features monoio/iouring,global"]
+
+
+[tasks.dev]
+description = "Run tests"
+run = ["cargo watch -c -x build --features monoio/iouring,global"]

@@ -7,7 +7,7 @@ use monoio::{
     net::TcpStream,
 };
 
-use crate::{errors::Error, iter::IpAddresses};
+use crate::{addr::IpAddresses, errors::Error};
 
 /// Query a nameserver for the given question, using the TCP protocol.
 #[cold]

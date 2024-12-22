@@ -7,7 +7,7 @@ use std::{
 use domain::base::Message;
 use monoio::{io::Canceller, net::udp::UdpSocket};
 
-use crate::{errors::Error, iter::IpAddresses};
+use crate::{addr::IpAddresses, errors::Error};
 
 /// Query a nameserver for the given question, using the UDP protocol.
 ///

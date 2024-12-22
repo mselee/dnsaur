@@ -1,15 +1,15 @@
-use std::{borrow::Borrow, net::IpAddr};
+use std::{borrow::Borrow, net::IpAddr, time::Duration};
 
-use crate::DnsResolver;
+use crate::StubResolver;
 
-impl DnsResolver {
-    pub(super) fn query_hosts<'a, S>(&'a self, host: S) -> impl Iterator<Item = IpAddr> + 'a
-    where
-        S: AsRef<str> + Borrow<str> + 'a,
-    {
+impl StubResolver {
+    pub(super) fn query_hosts<'a>(
+        &'a self,
+        host: impl AsRef<str> + Borrow<str> + 'a,
+    ) -> impl Iterator<Item = (IpAddr, Duration)> + 'a {
         self.entries
             .iter()
             .filter(move |entry| entry.hosts.contains(host.as_ref()))
-            .map(|entry| entry.ip)
+            .map(|entry| (entry.ip, Duration::ZERO))
     }
 }

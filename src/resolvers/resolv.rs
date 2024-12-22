@@ -10,19 +10,19 @@ use domain::base::{
     StaticCompressor, ToName,
 };
 
-use crate::{errors::Error, iter::IpAddresses, DnsResolver};
+use crate::{addr::IpAddresses, errors::Error, StubResolver};
 
-impl DnsResolver {
+impl StubResolver {
     pub(super) async fn query_resolv<B>(&self, name: &str) -> Result<B, Error>
     where
-        B: FromIterator<IpAddr>,
+        B: FromIterator<(IpAddr, Duration)>,
     {
         self.dns_with_search(name).await
     }
 
     async fn dns_with_search<B>(&self, name: &str) -> Result<B, Error>
     where
-        B: FromIterator<IpAddr>,
+        B: FromIterator<(IpAddr, Duration)>,
     {
         // See if we should just use global scope.
         let num_dots = memchr::Memchr::new(b'.', name.as_bytes()).count();
@@ -56,7 +56,7 @@ impl DnsResolver {
     /// Preform a manual lookup for the name.
     async fn dns_lookup<B>(&self, name: impl ToName) -> Result<B, Error>
     where
-        B: FromIterator<IpAddr>,
+        B: FromIterator<(IpAddr, Duration)>,
     {
         let it = self.nameservers.iter();
         for nameserver in it {
@@ -74,7 +74,7 @@ impl DnsResolver {
         nameserver: &SocketAddr,
     ) -> Result<B, Error>
     where
-        B: FromIterator<IpAddr>,
+        B: FromIterator<(IpAddr, Duration)>,
     {
         // Try to poll for an IPv4 address first.
         let ipv4 = query_question_and_nameserver(
