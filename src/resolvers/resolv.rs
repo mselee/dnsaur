@@ -13,11 +13,17 @@ use domain::base::{
 use crate::{errors::Error, iter::IpAddresses, DnsResolver};
 
 impl DnsResolver {
-    pub(super) async fn query_resolv(&self, name: &str) -> Result<Vec<IpAddr>, Error> {
+    pub(super) async fn query_resolv<B>(&self, name: &str) -> Result<B, Error>
+    where
+        B: FromIterator<IpAddr>,
+    {
         self.dns_with_search(name).await
     }
 
-    async fn dns_with_search(&self, name: &str) -> Result<Vec<IpAddr>, Error> {
+    async fn dns_with_search<B>(&self, name: &str) -> Result<B, Error>
+    where
+        B: FromIterator<IpAddr>,
+    {
         // See if we should just use global scope.
         let num_dots = memchr::Memchr::new(b'.', name.as_bytes()).count();
         let global_scope = num_dots >= self.ndots as usize || name.ends_with(".");
@@ -36,27 +42,29 @@ impl DnsResolver {
 
                 let name = UncertainName::<Vec<u8>>::from_str(&host)?.into_absolute()?;
                 if let Ok(addrs) = self.dns_lookup(name).await {
-                    if !addrs.is_empty() {
-                        return Ok(addrs);
-                    }
+                    return Ok(addrs);
                 }
             }
+            FromIterator::from_iter(std::iter::empty())
+        } else {
+            let name = UncertainName::<Vec<u8>>::from_str(name)?.into_absolute()?;
+            // Preform a DNS search on just the name.
+            self.dns_lookup(name).await
         }
-
-        let name = UncertainName::<Vec<u8>>::from_str(name)?.into_absolute()?;
-        // Preform a DNS search on just the name.
-        self.dns_lookup(name).await
     }
 
     /// Preform a manual lookup for the name.
-    async fn dns_lookup(&self, name: impl ToName) -> Result<Vec<IpAddr>, Error> {
+    async fn dns_lookup<B>(&self, name: impl ToName) -> Result<B, Error>
+    where
+        B: FromIterator<IpAddr>,
+    {
         let it = self.nameservers.iter();
         for nameserver in it {
             if let Ok(addrs) = self.query_name_and_nameserver(&name, nameserver).await {
                 return Ok(addrs);
             }
         }
-        Ok(vec![])
+        Ok(FromIterator::from_iter(std::iter::empty()))
     }
 
     /// Poll for the name on the given nameserver.
@@ -128,7 +136,7 @@ async fn query_question_and_nameserver(
 
     // The query may be too large, so we need to use TCP.
     if data.len() <= udp_payload_size as usize {
-        if let Some(addrs) = crate::lookup::udp::query(
+        if let Ok(Some(addrs)) = crate::lookups::udp::query(
             id,
             data.clone(),
             nameserver,
@@ -136,14 +144,14 @@ async fn query_question_and_nameserver(
             timeout_duration,
             udp_payload_size,
         )
-        .await?
+        .await
         {
             return Ok(Some(addrs));
         }
     }
 
     // We were unable to complete the query over UDP, use TCP instead.
-    crate::lookup::tcp::query(
+    crate::lookups::tcp::query(
         id,
         data,
         nameserver,

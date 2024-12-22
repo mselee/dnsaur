@@ -9,7 +9,7 @@ impl DnsResolver {
     pub async fn lookup<'a, S, B>(&'a self, host: S) -> Result<B, Error>
     where
         S: AsRef<str> + Borrow<str> + 'a,
-        B: FromIterator<IpAddr> + Sized,
+        B: FromIterator<IpAddr>,
     {
         if let Ok(ip) = IpAddr::from_str(host.as_ref()) {
             return Ok(std::iter::once(ip).collect());
@@ -25,11 +25,7 @@ impl DnsResolver {
             return Ok(addrs);
         }
 
-        let addrs = self
-            .query_resolv(host.as_ref())
-            .await?
-            .into_iter()
-            .collect();
+        let addrs = self.query_resolv::<B>(host.as_ref()).await?;
 
         Ok(addrs)
     }
